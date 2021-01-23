@@ -13,6 +13,7 @@ module.exports = {
   rules: {
     'no-console': 0,
     'linebreak-style': 0,
+    'no-use-before-define': 0,
     'import/no-extraneous-dependencies': 0,
   },
 };
