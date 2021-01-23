@@ -1,5 +1,6 @@
+/* eslint-disable no-alert */
 const marked = require('marked');
-const { remote, ipcRenderer } = require('electron');
+const { remote, ipcRenderer, shell } = require('electron');
 const path = require('path');
 
 const mainProcess = remote.require('./main');
@@ -31,12 +32,30 @@ markdownView.addEventListener('keyup', (event) => {
   updateWindowTitle(currentContent !== state.originalContents);
 });
 
-openFileButton.addEventListener('click', () => {
-  mainProcess.getFile();
+saveMarkdownButton.addEventListener('click', () => {
+  mainProcess.saveMarkdown(state.filePath, markdownView.value);
 });
 
-ipcRenderer.on('file-open-started', () => {
-  markdownView.value = 'Loading...';
+saveHtmlButton.addEventListener('click', () => {
+  mainProcess.saveHtml(htmlView.innerHTML);
+});
+
+showFileButton.addEventListener('click', () => {
+  if (!state.filePath) {
+    return alert('No file');
+  }
+  return shell.showItemInFolder(state.filePath);
+});
+
+openInDefaultButton.addEventListener('click', () => {
+  if (!state.filePath) {
+    return alert('No file');
+  }
+  return shell.openExternal(state.filePath);
+});
+
+openFileButton.addEventListener('click', () => {
+  mainProcess.getFile();
 });
 
 const updateWindowTitle = (isEdited) => {
@@ -44,9 +63,23 @@ const updateWindowTitle = (isEdited) => {
   if (state.filePath) {
     title = `${path.basename(state.filePath)} - ${title}`;
   }
-  console.log({ isEdited });
+
+  if (isEdited) {
+    title = `${title} (Edited)`;
+  }
+
+  showFileButton.disabled = !state.filePath;
+  openInDefaultButton.disabled = !state.filePath;
+
+  saveMarkdownButton.disabled = !isEdited;
+  revertButton.disabled = !isEdited;
+
   currentWindow.setTitle(title);
 };
+
+ipcRenderer.on('file-open-started', () => {
+  markdownView.value = 'Loading...';
+});
 
 ipcRenderer.on('file-opened', (_, fileName, contents) => {
   state.filePath = fileName;
